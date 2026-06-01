@@ -1,0 +1,249 @@
+import pandas as pd
+
+import numpy as np
+
+
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+import seaborn as sns
+from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import (accuracy_score, precision_score, recall_score,
+                              f1_score, roc_auc_score, roc_curve, confusion_matrix)
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.naive_bayes import GaussianNB
+#import warinngs
+import warnings
+warnings.filterwarnings('ignore')
+
+
+C = {
+    'bg'  : '#0F1117',   # very dark background
+    'card': '#1A1D27',   # slightly lighter background for charts
+    'a1'  : '#6C63FF',   # purple  → used for Logistic Regression
+    'a2'  : '#FF6B9D',   # pink    → used for Random Forest
+    'a3'  : '#00D4AA',   # teal    → used for KNN
+    'text': '#E8E8F0',   # white-ish text
+    'sub' : '#8888AA',   # grey text (for subtitles, axis labels)
+    'grid': '#2A2D3A',   # very dark grid lines
+}
+
+# One colour for each of our 3 models
+MODEL_COLORS = [C['a2'], C['a1'], C['a3']]
+
+# ── Reusable function: styles every chart with dark theme ──
+def style_ax(ax, title='', xlabel='', ylabel=''):
+    ax.set_facecolor(C['card'])                          # dark bg inside chart
+    ax.tick_params(colors=C['sub'], labelsize=9)         # axis tick colour
+    ax.xaxis.label.set_color(C['sub'])                   # x-axis label colour
+    ax.yaxis.label.set_color(C['sub'])                   # y-axis label colour
+    for s in ax.spines.values():
+        s.set_edgecolor(C['grid'])                       # border colour
+    ax.grid(color=C['grid'], linewidth=0.4, alpha=0.6)   # faint grid lines
+    if title:  ax.set_title(title,  color=C['text'], fontsize=11, fontweight='bold', pad=8)
+    if xlabel: ax.set_xlabel(xlabel, color=C['sub'])
+    if ylabel: ax.set_ylabel(ylabel, color=C['sub'])
+
+
+# ── Reusable function: adds big title + subtitle to a figure ──
+def fig_title(fig, title, sub=''):
+    fig.text(0.5, 0.98, title, ha='center', va='top',
+             color=C['text'], fontsize=15, fontweight='bold')
+    if sub:
+        fig.text(0.5, 0.955, sub, ha='center', va='top',
+                 color=C['sub'], fontsize=9)
+
+
+import pandas as pd
+df = pd.read_csv('/content/Pakistani_Diabetes_Dataset.csv')
+display(df.head())
+
+import numpy as np
+# .str.strip() removes hidden spaces from column names
+# e.g. 'Rgn ' (with space) becomes 'Rgn'
+df.columns = df.columns.str.strip()
+
+# Rename short confusing names to full readable names
+rename_map = {
+    'Rgn'  : 'Region',           # location
+    'wt'   : 'Weight',           # body weight (kg)
+    'wst'  : 'WaistSize',        # waist circumference
+    'sys'  : 'SysBP',            # systolic blood pressure
+    'dia'  : 'DiaBP',            # diastolic blood pressure
+    'his'  : 'FamilyHistory',    # family history of diabetes (0/1)
+    'A1c'  : 'HbA1c',            # HbA1c blood sugar test
+    'B.S.R': 'BloodSugar',       # blood sugar reading
+    'vision': 'VisionIssue',     # vision problems (0/1)
+    'Exr'  : 'Exercise',         # exercise minutes per week
+    'dipsia': 'Polydipsia',      # excessive thirst (0/1)
+    'uria' : 'Polyuria',         # excessive urination (0/1)
+    'Dur'  : 'DiabetesDuration', # years with diabetes
+    'neph' : 'Nephropathy',      # kidney disease (0/1)
+}
+df.rename(columns=rename_map, inplace=True)
+
+# Print basic information about the dataset
+print(f"\n  ✔ Total rows    : {df.shape[0]}")        # number of patients
+print(f"  ✔ Total columns : {df.shape[1]}")          # number of features
+print(f"  ✔ Missing values: {df.isnull().sum().sum()}") # any empty cells?
+print(f"  ✔ Diabetic      : {df['Outcome'].sum()} patients ({df['Outcome'].mean()*100:.1f}%)")
+print(f"  ✔ Non-Diabetic  : {(df['Outcome']==0).sum()} patients ({(df['Outcome']==0).mean()*100:.1f}%)")
+
+print("\n  First 5 rows of the dataset:")
+print(df.head().to_string())
+
+# Create list of all features (everything except Outcome)
+features = [c for c in df.columns if c != 'Outcome']
+
+# Create list of only numeric features (for heatmap)
+num_feats = df[features].select_dtypes(include=np.number).columns.tolist()
+
+print("\n" + "=" * 60)
+print("  STEP 2 — SEPARATING FEATURES AND TARGET")
+print("=" * 60)
+
+# X = all input columns (what the model looks at to make a prediction)
+X = df[features].copy()
+
+# y = the answer column (0 = no diabetes, 1 = diabetes)
+y = df['Outcome'].copy()
+
+print(f"\n  ✔ X shape : {X.shape}  ← inputs fed to the model")
+print(f"  ✔ y shape : {y.shape}  ← answers the model tries to predict")
+
+
+
+from sklearn.model_selection import train_test_split
+
+print("\n" + "=" * 60)
+print("  STEP 3 — TRAIN / TEST SPLIT  (80% train, 20% test)")
+print("=" * 60)
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y,
+    test_size=0.2,      # 20% goes to test set
+    random_state=42,    # fixed seed → same split every run
+    stratify=y          # keeps same diabetic% in both train & test
+)
+
+print(f"\n  ✔ Training set : {X_train.shape[0]} patients (model learns from these)")
+print(f"  ✔ Testing set  : {X_test.shape[0]} patients (model is judged on these)")
+print(f"  ✔ Diabetic % in train : {y_train.mean()*100:.1f}%")
+print(f"  ✔ Diabetic % in test  : {y_test.mean()*100:.1f}%  ← stratify kept it equal!")
+
+from sklearn.preprocessing import StandardScaler
+print("\n" + "=" * 60)
+print("  STEP 4 — FEATURE SCALING")
+print("=" * 60)
+
+scaler = StandardScaler()
+
+# fit_transform on TRAIN: learns the mean & std, then scales
+X_train_sc = scaler.fit_transform(X_train)
+
+# transform on TEST: uses the SAME mean & std learned from train
+# NEVER fit on test data — that would be cheating!
+X_test_sc = scaler.transform(X_test)
+
+print(f"\n  ✔ Scaling done using StandardScaler")
+print(f"  ✔ Each feature now has mean ≈ 0, std ≈ 1")
+print(f"  ✔ Fit on train only → same scale applied to test")
+
+
+
+from google.colab import files
+import os
+
+print('Please select your "Pakistani_Diabetes_Dataset.csv" file:')
+uploaded = files.upload()
+
+if os.path.exists('/content/Pakistani_Diabetes_Dataset.csv'):
+    print('\n✔ File uploaded successfully! You can now run the EDA and analysis cells.')
+else:
+    print('\n❌ File not found. Please make sure the file you upload is named exactly "Pakistani_Diabetes_Dataset.csv".')
+
+import subprocess
+result = subprocess.run(["apt-get", "install", "-y", "fonts-noto-color-emoji"], capture_output=True, text=True)
+print(result.stdout[-500:])  # check it installed
+
+# Verify the file is there
+import os
+for root, dirs, files in os.walk("/usr/share/fonts"):
+    for f in files:
+        if "Noto" in f and "Emoji" in f:
+            print(os.path.join(root, f))
+
+import matplotlib.font_manager as fm
+
+# The previous error occurred because Matplotlib's FT2Font engine
+# often fails to parse 'Color Emoji' TTF formats (Error 0x2).
+
+# Instead of forcing addfont(), we refresh the existing font cache
+fm._load_fontmanager(try_read_cache=False)
+
+# Check for any already installed Noto fonts that are compatible
+available_noto = [f.name for f in fm.fontManager.ttflist if "Noto" in f.name]
+print("Available Noto fonts:", list(set(available_noto)) if available_noto else "None found")
+
+print("\nTip: To use emojis in plots, it is usually safer to use the default DejaVu Sans or a standard symbol font.")
+
+plt.rcParams['font.family'] = 'DejaVu Sans'
+
+# ── Figure 1: Class Balance Donut + Feature Histograms ──────────
+print("  -> Drawing Fig 1: Distributions...")
+
+# Pick continuous numeric features only (skip binary 0/1 columns)
+show_feats = [f for f in num_feats
+              if f not in ['Gender','Region','FamilyHistory','VisionIssue',
+                           'Exercise','Polydipsia','Polyuria','Nephropathy']][:10]
+
+fig1 = plt.figure(figsize=(20, 10), facecolor=C['bg'])
+fig_title(fig1,
+    'Pakistani Diabetes Dataset - Feature Distributions',
+    'Purple bars = No Diabetes  |  Pink bars = Diabetes  |  Overlapping shows where they mix')
+fig1.subplots_adjust(top=0.89, bottom=0.07, left=0.05, right=0.97,
+                     hspace=0.5, wspace=0.38)
+
+# ── Donut chart: shows class balance ──
+ax_pie = fig1.add_subplot(2, 6, 1)
+style_ax(ax_pie, 'Class Balance')
+ax_pie.axis('off')   # hide axes for pie chart
+
+counts = y.value_counts().sort_index()   # [count_0, count_1]
+wedges, texts, autos = ax_pie.pie(
+    counts,
+    labels=['No DM', 'DM'],
+    autopct='%1.1f%%',            # show % on each slice
+    startangle=90,                # start from top
+    colors=[C['a1'], C['a2']],    # purple / pink
+    pctdistance=0.75,             # % label distance from centre
+    wedgeprops=dict(width=0.55, edgecolor=C['bg'], linewidth=2)  # donut hole
+)
+for t in texts: t.set_color(C['sub']); t.set_fontsize(9)
+for a in autos: a.set_color(C['text']); a.set_fontsize(10); a.set_fontweight('bold')
+
+# ── Histograms: one per feature, two overlapping bars ──
+for i, feat in enumerate(show_feats):
+    ax = fig1.add_subplot(2, 6, i + 2)
+
+    # Separate data by class
+    d0 = df[df.Outcome == 0][feat].dropna()   # non-diabetic values
+    d1 = df[df.Outcome == 1][feat].dropna()   # diabetic values
+
+    # Draw overlapping histograms
+    ax.hist(d0, bins=20, alpha=0.65, color=C['a1'], density=True)
+    ax.hist(d1, bins=20, alpha=0.65, color=C['a2'], density=True)
+    style_ax(ax, feat)
+    ax.tick_params(labelsize=7)
+
+# Corrected path to /content/
+fig1.savefig('/content/fig1_distributions.png', dpi=150, bbox_inches='tight', facecolor=C['bg'])
+plt.close(fig1)
+print("     Done. Saved fig1_distributions.png to /content/")

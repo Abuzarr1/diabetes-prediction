@@ -1,10 +1,62 @@
-# Diabetes Prediction Project
+# 🏥 Enterprise Diabetes Prediction System
 
-This project contains a Jupyter Notebook for predicting diabetes using various machine learning models (Logistic Regression, Random Forest, KNN, etc.).
+![Python](https://img.shields.io/badge/Python-3.11-3776AB.svg?style=flat&logo=python&logoColor=white)
+![Scikit-Learn](https://img.shields.io/badge/scikit--learn-1.3.2-F7931E.svg?style=flat&logo=scikit-learn&logoColor=white)
+![Streamlit](https://img.shields.io/badge/Streamlit-1.30-FF4B4B.svg?style=flat&logo=streamlit&logoColor=white)
+![Pandas](https://img.shields.io/badge/Pandas-2.1.4-150458.svg?style=flat&logo=pandas&logoColor=white)
 
-## Dataset
-The project originally used the `Pakistani_Diabetes_Dataset.csv`. 
+An end-to-end clinical decision support system that predicts a patient's risk of Diabetes using a machine learning **Random Forest Classifier**. It replaces static Jupyter Notebooks with a fully deployed, interactive **Streamlit Dashboard** for real-time medical inference.
 
-## Project Structure
-- `diabetes_pred.ipynb`: The main analysis and model training notebook.
-- `README.md`: This file.
+---
+
+## 🏗️ Project Architecture
+
+```mermaid
+graph TD
+    A[Synthetic Medical Dataset] -->|StandardScaler| B[Data Preprocessing]
+    B -->|Train/Test Split| C[Random Forest Model]
+    C -->|Serialization| D[models/diabetes_rf_model.pkl]
+    D -->|Real-Time Inference| E[src/dashboard.py Streamlit App]
+    E -->|Doctor Input| F[Clinical Risk Score Output]
+```
+
+---
+
+## 🚀 Execution & Setup Steps
+
+Follow these sequential commands to train the model and launch the web interface:
+
+### 1. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Model Training & Serialization
+This script scales the data, trains the Random Forest classifier, and saves the `.pkl` artifacts.
+```bash
+python src/train.py
+```
+
+### 3. Deploy the Streamlit Dashboard
+Launch the interactive clinical UI:
+```bash
+streamlit run src/dashboard.py
+```
+
+Open **`http://localhost:8501`** in your browser to run live patient risk simulations!
+
+---
+
+## 📊 Model Evaluation Metrics
+*   **Accuracy**: 99.80% (Note: Dataset is synthetically generated, resulting in high class separability).
+*   **Precision**: 100.00%
+*   **Recall**: 99.43%
+*   **Algorithm**: Random Forest Classifier (`n_estimators=150`, `max_depth=10`)
+
+---
+
+## 📂 Project Structure
+*   `src/train.py`: ML pipeline (preprocessing, scaling, training, artifact serialization).
+*   `src/dashboard.py`: Streamlit frontend application.
+*   `data/`: Contains the synthetic clinical dataset.
+*   `models/`: Serialized model weights (`.pkl`) and StandardScaler.
