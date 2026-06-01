@@ -48,10 +48,10 @@ Open **`http://localhost:8501`** in your browser to run live patient risk simula
 ---
 
 ## 📊 Model Evaluation Metrics
-*   **Accuracy**: 99.80% (Note: Dataset is synthetically generated, resulting in high class separability).
-*   **Precision**: 100.00%
-*   **Recall**: 99.43%
-*   **Algorithm**: Random Forest Classifier (`n_estimators=150`, `max_depth=10`)
+*   **Accuracy**: 96.00% 
+*   **Precision**: 96.11%
+*   **Recall**: 92.24%
+*   **ROC-AUC**: 0.9880
 
 ---
 

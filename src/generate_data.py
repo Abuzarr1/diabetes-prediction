@@ -16,18 +16,18 @@ def generate_diabetes_data(n_samples=5000):
     # Diabetic patients generally have higher weight, waist size, BP, and blood sugar
     
     weight = np.where(outcome == 1, 
-                      np.random.normal(80, 15, n_samples),
-                      np.random.normal(75, 12, n_samples))
+                      np.random.normal(82, 18, n_samples),
+                      np.random.normal(78, 15, n_samples))
     weight = np.clip(weight, 40, 150)
     
     waist = np.where(outcome == 1,
-                     np.random.normal(38, 6, n_samples),
-                     np.random.normal(34, 5, n_samples))
+                     np.random.normal(38, 7, n_samples),
+                     np.random.normal(35, 6, n_samples))
     waist = np.clip(waist, 24, 60)
     
     sys_bp = np.where(outcome == 1,
-                      np.random.normal(135, 15, n_samples),
-                      np.random.normal(125, 15, n_samples))
+                      np.random.normal(130, 20, n_samples),
+                      np.random.normal(125, 18, n_samples))
     sys_bp = np.clip(sys_bp, 90, 200)
     
     dia_bp = np.where(outcome == 1,
@@ -41,42 +41,42 @@ def generate_diabetes_data(n_samples=5000):
     
     # Clinical markers
     hba1c = np.where(outcome == 1,
-                     np.random.normal(7.5, 1.2, n_samples),
-                     np.random.normal(5.5, 0.8, n_samples))
+                     np.random.normal(6.8, 1.4, n_samples),
+                     np.random.normal(5.8, 1.0, n_samples))
     hba1c = np.clip(hba1c, 4.0, 14.0)
     
     blood_sugar = np.where(outcome == 1,
-                           np.random.normal(160, 40, n_samples),
-                           np.random.normal(105, 20, n_samples))
+                           np.random.normal(140, 45, n_samples),
+                           np.random.normal(110, 30, n_samples))
     blood_sugar = np.clip(blood_sugar, 70, 400)
     
-    # Symptoms
+    # Symptoms - reduce distinctiveness
     vision = np.where(outcome == 1,
-                      np.random.binomial(1, 0.4, n_samples),
-                      np.random.binomial(1, 0.05, n_samples))
+                      np.random.binomial(1, 0.25, n_samples),
+                      np.random.binomial(1, 0.10, n_samples))
                       
     exercise = np.where(outcome == 1,
-                        np.random.gamma(2, 20, n_samples),
-                        np.random.gamma(4, 30, n_samples))
+                        np.random.gamma(3, 20, n_samples),
+                        np.random.gamma(4, 25, n_samples))
     exercise = np.clip(exercise, 0, 400).astype(int)
     
     polydipsia = np.where(outcome == 1,
-                          np.random.binomial(1, 0.5, n_samples),
-                          np.random.binomial(1, 0.02, n_samples))
+                          np.random.binomial(1, 0.3, n_samples),
+                          np.random.binomial(1, 0.1, n_samples))
                           
     polyuria = np.where(outcome == 1,
-                        np.random.binomial(1, 0.55, n_samples),
-                        np.random.binomial(1, 0.01, n_samples))
+                        np.random.binomial(1, 0.35, n_samples),
+                        np.random.binomial(1, 0.1, n_samples))
                         
-    # Only diabetics have diabetes duration (mostly) or we just leave it for all (as 0 for non-diabetics)
+    # Duration and Nephropathy
     duration = np.where(outcome == 1,
-                        np.random.gamma(2, 3, n_samples),
-                        np.zeros(n_samples))
+                        np.random.gamma(1.5, 3, n_samples),
+                        np.random.gamma(0.5, 1, n_samples)) # Non-diabetics might have some random error entry or pre-diabetic years
     duration = np.clip(duration, 0, 30).astype(int)
     
     nephropathy = np.where(outcome == 1,
-                           np.random.binomial(1, 0.2, n_samples),
-                           np.zeros(n_samples)) # Very rare in non-diabetics
+                           np.random.binomial(1, 0.15, n_samples),
+                           np.random.binomial(1, 0.05, n_samples))
 
     df = pd.DataFrame({
         'Region': region,
